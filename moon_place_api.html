@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="jp">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moon Place API</title>
+    <style>
+        html,
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            height: 150px;
+            text-align: center;
+            color: rgb(252, 249, 208);
+            margin-top: 100px;
+            font-size: 40px;
+        }
+        #time{
+             color: rgb(252, 249, 208);
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            /* background-image: url(img/lroc_color_poles_2k.tif); */
+        }
+
+        .text_block {
+            height: 300px;
+        }
+
+        #output p,
+        #result p,
+        #age_text p {
+            text-align: center;
+            opacity: 0;
+            animation-name: sample01;
+            /*←@keyframesにも同じ名前を記述*/
+            animation-duration: 4s;
+            animation-fill-mode: forwards;
+            margin-bottom: 10px;
+            padding-top: 10px;
+            font-weight: bold;
+        }
+
+        @keyframes sample01 {
+
+            /*←animation-nameにも同じ名前を記述*/
+            0% {
+                opacity: 0;
+                color: #000;
+            }
+
+            /* 90% {
+                opacity: 1;
+                color: rgb(155, 148, 148);
+            } */
+
+            100% {
+                opacity: 1;
+                color: rgb(252, 249, 208);
+            }
+        }
+
+
+        .moon_back {
+            height: 500px;
+            background-image: url(img/lroc_color_poles_2k.jpg);
+        }
+    </style>
+</head>
+
+<body>
+    <h1><i>Moon Place API</i></h1>
+    <!-- <input type="text">
+    <button id="btn">データ取得</button> -->
+    <div class='text_block'>
+        <div id="output"></div>
+        <div id="result"></div>
+        <div id="age_text"></div>
+    </div>
+    <div class="moon_back"></div>
+
+
+    <div id="map" style="width:100%;height:500px;"></div>
+    <div id="time"></div>
+    <!-- <div id="output_2"></div> -->
+    <!-- p5js -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.0/lib/p5.js"></script>
+    <script src="sketch.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- axiosライブラリの読み込み -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- googlemap -->
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key=libraries=places&callback=initMap">
+        </script>
+
+    <script>
+        function initMap(){
+                    function showSuccess(position) {
+                //console.log(position);
+                const date_obj = new Date();
+                const full_year = date_obj.getFullYear();
+                const month = date_obj.getMonth() + 1;
+                const date = date_obj.getDate();
+                const hours = date_obj.getHours();
+                const latitude = Math.floor(position.coords.latitude * 100) / 100;//緯度
+                const longitude = Math.floor(position.coords.longitude * 100) / 100;//経度
+
+                $('#time').html(date_obj.toString());
+                $('#result').html('<p>自分の緯度 ' + latitude + '° <br>自分の経度 ' + longitude + '°</p>');
+
+                const url = `https://mgpn.org/api/moon/position.cgi?json&y=${full_year}&m=${month}&d=${date}&h=${hours}&lat=${latitude}&lon=${longitude}`
+                axios
+                    .get(url)
+                    .then(function (response) {
+                        console.log(response);
+                        console.log(response.data.result.age);
+                        const altitude = Math.floor(response.data.result.altitude * 100) / 100;//高度 少数第二位
+                        const azimuth = Math.floor(response.data.result.azimuth * 100) / 100;//方位 少数第二位
+                        const age_text = Math.round(response.data.result.age * 10) / 10;//少数第一位
+                        const age = Math.round(response.data.result.age);//少数第一位
+                        console.log(age);
+                        x=age_text
+                        //$('#age_text').html('<p>月齢： ' + age_text + '</p>');
+
+                        //月齢を出すif文 おかしい！！⬅︎聞く
+                        if (0 <= age_text <= 1) {
+                            //alert('foo')
+                            $('#age_text').html('<p>三日月<br>月齢 ' + age_text + '</p>');
+                        }if (2 <= age_text <= 3) {
+                            //alert('yey');
+                            $('#age_text').html('<p>二日月<br>月齢 ' + age_text + '</p>');
+                        }if (4 <= age_text <= 5) {
+                            //alert('none');
+                            $('#age_text').html('<p>三日月<br>月齢 ' + age_text + '</p>');
+                        } if (6 <= age_text <= 7) {
+                            //alert('none');
+                            $('#age_text').html('<p>三日月⬅︎聞く<br>月齢 ' + age_text + '</p>');
+                        }
+
+
+                        //方位を出すif文 おかしい！！⬅︎聞く
+                        if (247.5 <= azimuth < 292.5) {
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=⬅︎西（' + azimuth + ' °）</p>');
+                        }if (292.5 <= azimuth < 337.5) {
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=↖北西（' + azimuth + ' °）</p>');
+                        }if (337.5 <= azimuth && azimuth < 22.5) {
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=👆北（' + azimuth + ' °）</p>');
+                        }if (22.5 <= azimuth < 67.5) {
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=↗️北東（' + azimuth + ' °）</p>');
+                        }if (67.5 <= azimuth < 112.5) {
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=⇨東（' + azimuth + ' °）</p>');
+                        } if (112.5<= azimuth < 157.5) {
+                            //console.log(azimuth);
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=↘︎南東（' + azimuth + ' °）</p>');
+                        }if (157.5 <= azimuth < 202.5) {
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=↓南（' + azimuth + ' °）</p>');
+                        }if (202.5 <= azimuth < 247.5) {
+                            $('#output').html('<p>月の高度 ' + altitude + ' ° <br>月の方位=↙️南西⬅︎聞く（' + azimuth + ' °）</p>');
+                        } else { alert('何かおかしいですね〜。') }
+
+                        //高度的に月が見えそうか見えなさそうか。
+                        if (altitude > 0) {
+                            alert('月が見えるかも。。月が見守っています。');
+                            $('body').css('background-color', 'black');
+                        } else {
+                            alert('月は見えない。。');
+                            $('body').css('background-color', 'black');
+                            $('body').on('click', function () {
+                                $('body').css('background-color', 'rgb(252, 249, 208)');
+                            });
+                        }
+
+                        //googolemap 追加
+                        let latlng = new google.maps.LatLng(latitude, longitude);
+                        // Google Mapsに書き出し
+                        let map = new google.maps.Map(document.getElementById('map'), {
+                            zoom: 15,// ズーム値
+                            center: latlng,// 中心座標
+                            mapTypeId: "roadmap", //roadmap,hybrid(衛生＋地図)、stallite(衛星)、terrain(地形)
+                            styles: [{
+                                featureType: 'all', //そのほかのfeatureTypeは"https://developers.google.com/maps/documentation/javascript/style-reference"
+                                stylers: [{
+                                    hue: '#e6b422' //色相 16進数のRGB値を記載
+                                }, {
+                                    saturation: 0//彩度 -100〜100の値を記載
+                                }, {
+                                    lightness: 0 //明度 -100〜100の値を記載
+                                }, {
+                                    gamma: 0.8 //ガンマ値 0.01〜10.0の値を記載
+                                }]
+                            }]
+                        });
+
+                        let targetMarker = new google.maps.Marker({ //マーカーを作成
+                            position: latlng,//緯度経度を中心にする
+                            map: map,
+                            //title: title
+                        });
+
+                        // infowindow用のDOMを生成
+                        let content = ' <p> 月の高度 ' + altitude + ' ° <br>月の方位 ' + azimuth + ' °</p>';
+
+                        // infowindowのオプション
+                        let infowindow = new google.maps.InfoWindow({
+                            content: content
+                        });
+
+                        // infowindowを表示
+                        infowindow.open(map, targetMarker);
+
+                        // マーカーがクリックされた時にinfowindowを表示
+                        // targetMarker.addListener('click', function () {
+                        //     infobox.open(map, targetMarker);
+                        // });
+                        $('targetMarker').on('click', function () {
+                            infowindow.open(map, targetMarker);
+                        })
+                    })
+                    .catch(function (error) {
+                        // リクエスト失敗時の処理（errorにエラー内容が入っている）
+                        console.log(error);
+                    })
+                    .finally(function () {
+                        // 成功失敗に関わらず必ず実行
+                        console.log("done!");
+                    });
+            }
+
+            function showError(error) {
+                const errorMessages = [
+                    "位置情報が許可されてません",
+                    "現在位置を特定できません",
+                    "位置情報を取得する前にタイムアウトになりました",
+                ];
+                alert(`error:${errorMessages[error.code - 1]}`);
+            }
+            const option = {
+                enableHighAccuracy: true,
+                maximumAge: 20000,
+                timeout: 100000,
+            };
+
+            window.onload = function () {//window.onload:ソースコードを読み込み終わってからという意味(Googleのソースコードを読み終わらせるため)
+                navigator.geolocation.getCurrentPosition(showSuccess, showError, option);//成功と失敗を判断
+            };//getCurrentPositionは実行したタイミングで位置情報をとる　watchPosition:位置をとり続けるものある
+
+        }
+
+    </script>
+
+</body>
+
+</html>
